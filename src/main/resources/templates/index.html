@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube JSON Extractor</title>
+    <script>
+        async function extractJson() {
+            const url = document.getElementById('youtubeUrl').value;
+            if (!url) {
+                alert("Please enter a YouTube URL.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/chapters?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                const chapters = data.chapters;
+                const videoId = data.videoId;
+
+                if (chapters && chapters.length > 0) {
+                    generateEmbeds(chapters, videoId);
+                } else {
+                    document.getElementById('jsonOutput').textContent = 'No chapters found.';
+                }
+            } catch (error) {
+                console.error("Error extracting JSON:", error);
+                alert("Failed to extract JSON. See console for details.");
+            }
+        }
+
+        function timeToSeconds(time) {
+            const [hours, minutes, seconds] = time.split(':').map(Number);
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function generateEmbeds(chapters, videoId) {
+            const output = document.getElementById('jsonOutput');
+            output.innerHTML = '';
+
+            chapters.forEach((chapter, index) => {
+                const startTime = timeToSeconds(chapter.time);
+                const endTime = index < chapters.length - 1 ? timeToSeconds(chapters[index + 1].time) : null;
+
+                let embedUrl = `https://www.youtube.com/embed/${videoId}?start=${startTime}`;
+                if (endTime) {
+                    embedUrl += `&end=${endTime}`;
+                }
+
+                console.log(embedUrl); // Print embed URL to console
+
+                const embedHtml = `
+                    <div>
+                        <h3>${chapter.title}</h3>
+                        <iframe width="560" height="315" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                `;
+                output.innerHTML += embedHtml;
+            });
+        }
+    </script>
+</head>
+<body>
+<h1>YouTube JSON Extractor</h1>
+<input type="text" id="youtubeUrl" placeholder="Enter YouTube URL">
+<button onclick="extractJson()">Extract JSON</button>
+<div id="jsonOutput"></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+
+</body>
+</html>
